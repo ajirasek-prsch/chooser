@@ -1,23 +1,29 @@
-const CACHE_NAME = "v7";
+const CACHE_NAME = "v8";
+
+// Compute the base URL from the service worker's own location so the
+// cached paths work both at the site root (localhost) and under a
+// sub-path like /chooser/ on GitHub Pages.
+const BASE = self.location.pathname.replace(/sw\.js$/, "");
+
 const CACHE_URLS = [
-	"/",
-	"/index.css",
-	"/index.js",
-	"/favicon.ico",
-	"/manifest.webmanifest",
-	"/images/logo-16.png",
-	"/images/logo-32.png",
-	"/images/logo-48.png",
-	"/images/logo-96.png",
-	"/images/logo-144.png",
-	"/images/logo-192.png",
-	"/images/logo-192-opaque.png",
-	"/images/logo-384.png",
-	"/images/logo-maskable-48.png",
-	"/images/logo-maskable-96.png",
-	"/images/logo-maskable-144.png",
-	"/images/logo-maskable-192.png",
-	"/images/logo-maskable-384.png",
+	BASE,
+	BASE + "index.css",
+	BASE + "index.js",
+	BASE + "favicon.ico",
+	BASE + "manifest.webmanifest",
+	BASE + "images/logo-16.png",
+	BASE + "images/logo-32.png",
+	BASE + "images/logo-48.png",
+	BASE + "images/logo-96.png",
+	BASE + "images/logo-144.png",
+	BASE + "images/logo-192.png",
+	BASE + "images/logo-192-opaque.png",
+	BASE + "images/logo-384.png",
+	BASE + "images/logo-maskable-48.png",
+	BASE + "images/logo-maskable-96.png",
+	BASE + "images/logo-maskable-144.png",
+	BASE + "images/logo-maskable-192.png",
+	BASE + "images/logo-maskable-384.png",
 ];
 
 addEventListener("install", (event) => {

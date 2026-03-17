@@ -18,16 +18,35 @@
 			name="apple-mobile-web-app-status-bar-style"
 			content="black-translucent"
 		/>
-		<meta name="theme-color" content="#ff0739" />
+		<meta name="theme-color" content="#000000" />
 		<link rel="stylesheet" href="index.css" />
 		<script type="module" src="index.js"></script>
 	</head>
 	<body>
 		<canvas id="board"></canvas>
+
+		<!-- Mode switcher bar (top) – lets touches fall through on the bar background -->
+		<div id="mode-bar">
+			<div id="mode-switcher" role="group" aria-label="Mode">
+				<button class="mode-btn active" data-mode="single">Single</button>
+				<button class="mode-btn" data-mode="group">Group</button>
+			</div>
+			<!-- Group count controls – visible only in group mode -->
+			<div id="group-controls" hidden>
+				<button id="group-dec" aria-label="Decrease group count">−</button>
+				<span id="group-count-label">2 groups</span>
+				<button id="group-inc" aria-label="Increase group count">+</button>
+			</div>
+		</div>
+
 		<p id="description">
 			Make all players put one finger on the screen. After 2 seconds one
 			player is chosen at random.
 		</p>
+
+		<!-- Group legend – visible only in group mode, populated by JS -->
+		<div id="group-legend" hidden></div>
+
 		<div
 			id="live-region"
 			aria-live="assertive"
