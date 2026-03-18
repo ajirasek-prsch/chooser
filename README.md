@@ -8,11 +8,11 @@ Player chooser web app. Every player places a finger on the screen. After 2 seco
 
 ### Single selection (default)
 
-The original behaviour: all players touch the screen, the app waits 2 seconds, then highlights one at random with an animated spotlight effect.
+All players touch the screen, the app waits 2 seconds, then highlights one at random with an animated spotlight effect.
 
 ### Group selection
 
-Touches are automatically divided into colour-coded groups using round-robin assignment (first touch → Group A, second → Group B, …, wrapping back after the last group). A legend at the bottom shows each group's colour, label, and how many active touches belong to it.
+All players touch the screen, the app waits 2 seconds, then divided into colour-coded groups at random with at most one player difference.
 
 **Controls (visible in Group mode):**
 
@@ -35,7 +35,7 @@ Then open <http://localhost:8000> in your browser.
 
 ## Deployment (GitHub Pages)
 
-A GitHub Actions workflow at `.github/workflows/pages.yml` automatically deploys the `src/` directory to GitHub Pages on every push to `main`.
+A GitHub Actions workflow at `.github/workflows/static.yml` automatically deploys the `src/` directory to GitHub Pages on every push to `main`.
 
 **How it works:**
 
