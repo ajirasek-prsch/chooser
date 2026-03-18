@@ -5,7 +5,7 @@
 	"description": "Choose a player",
 	"lang": "en",
 	"display": "standalone",
-	"start_url": "/",
+	"start_url": "/chooser",
 	"background_color": "#000",
 	"theme_color": "#000",
 	"icons": [
