@@ -4,7 +4,7 @@ const RESET_DELAY_MS = 1000;
 
 // ----- Mode system -----
 // "single" preserves the original random-pick behaviour.
-// "group" divides touches into colour-coded groups (round-robin assignment).
+// "group" divides touches into colour-coded groups (random assignment after a short wait).
 const MODE_SINGLE = "single";
 const MODE_GROUP = "group";
 let currentMode = MODE_SINGLE;
@@ -13,7 +13,6 @@ let currentMode = MODE_SINGLE;
 const MIN_GROUPS = 2;
 const MAX_GROUPS = 8;
 let groupCount = 2; // number of active groups (user-configurable, default 2)
-let nextGroupIndex = 0; // round-robin pointer: which group gets the next touch
 
 // Distinct HSL hues chosen for good visual separation and accessibility
 const GROUP_HUES = [0, 220, 130, 35, 280, 180, 330, 60];
@@ -72,10 +71,15 @@ const color = (index, alpha = 1) =>
 /**
  * Resolves the display colour for a player in the current mode.
  * In single mode, uses the hue-cycling palette.
- * In group mode, uses the fixed group palette.
+ * In group mode, uses the fixed group palette, or white while the player
+ * is still pending (waiting for group assignment).
  */
 const resolvePlayerColor = (player, alpha = 1) => {
 	if (currentMode === MODE_GROUP) {
+		if (player.groupIndex === undefined) {
+			// Pending – waiting for group assignment; show as white
+			return `hsla(0, 0%, 100%, ${alpha})`;
+		}
 		return groupColor(player.groupIndex, alpha);
 	}
 	return color(player.color, alpha);
@@ -159,11 +163,10 @@ const draw = (function () {
 })();
 
 // ----- Group legend UI -----
-/** Clears all players and resets group round-robin state. */
+/** Clears all players and resets group state. */
 const clearAll = () => {
 	chosenPlayer = undefined;
 	players.clear();
-	nextGroupIndex = 0;
 	ariaLiveReset();
 	draw();
 	updateGroupLegend();
@@ -208,6 +211,9 @@ groupLegend.addEventListener("click", (e) => {
 	}
 });
 
+/** Returns a random group index in [0, groupCount). */
+const pickRandomGroup = () => Math.floor(Math.random() * groupCount);
+
 // ----- Single-mode colour helper -----
 const pickUnusedColor = () => {
 	const alreadyChosenColors = Array.from(players.values()).map(
@@ -223,11 +229,9 @@ const pickUnusedColor = () => {
 // ----- Player lifecycle -----
 const addPlayer = (id, x, y) => {
 	if (currentMode === MODE_GROUP) {
-		// Auto-assign the touch to the next group in round-robin order.
-		// This is the simplest robust strategy: no manual selection required.
-		const groupIndex = nextGroupIndex;
-		nextGroupIndex = (nextGroupIndex + 1) % groupCount;
-		players.set(id, { x, y, color: groupIndex, groupIndex });
+		// In group mode the player is added as pending (no group yet).
+		// Groups are assigned after a short wait – see assignGroups().
+		players.set(id, { x, y, color: undefined, groupIndex: undefined });
 	} else {
 		const c = pickUnusedColor();
 		players.set(id, { x, y, color: c });
@@ -284,11 +288,48 @@ const choosePlayer = (function () {
 	};
 })();
 
+// ----- Assign groups (group mode) -----
+/**
+ * Schedules group assignment for all pending players.
+ * Works like choosePlayer() in single mode: every call cancels the previous
+ * timer and starts a new one.  After CHOOSE_DELAY_MS, all players whose
+ * groupIndex is still undefined are each assigned a random group and given
+ * the corresponding group colour.
+ */
+const assignGroups = (function () {
+	const doAssign = () => {
+		let anyAssigned = false;
+		for (const player of players.values()) {
+			if (player.groupIndex === undefined) {
+				const g = pickRandomGroup();
+				player.groupIndex = g;
+				player.color = g;
+				anyAssigned = true;
+			}
+		}
+		if (anyAssigned) {
+			draw();
+			updateGroupLegend();
+			ariaLiveLog("Groups assigned");
+		}
+	};
+
+	const hasPending = () =>
+		Array.from(players.values()).some((p) => p.groupIndex === undefined);
+
+	let timeout;
+	return () => {
+		window.clearTimeout(timeout);
+		if (currentMode === MODE_GROUP && hasPending()) {
+			timeout = window.setTimeout(doAssign, CHOOSE_DELAY_MS);
+		}
+	};
+})();
+
 const reset = (function () {
 	const reset = () => {
 		chosenPlayer = undefined;
 		players.clear();
-		nextGroupIndex = 0;
 		ariaLiveReset();
 		draw();
 		updateGroupLegend();
@@ -308,6 +349,8 @@ document.addEventListener("pointerdown", (e) => {
 	addPlayer(e.pointerId, e.clientX, e.clientY);
 	if (currentMode === MODE_SINGLE) {
 		choosePlayer();
+	} else if (currentMode === MODE_GROUP) {
+		assignGroups();
 	}
 });
 
@@ -325,6 +368,8 @@ const onPointerRemove = (e) => {
 		removePlayer(e.pointerId);
 		if (currentMode === MODE_SINGLE) {
 			choosePlayer();
+		} else if (currentMode === MODE_GROUP) {
+			assignGroups();
 		}
 	}
 };
@@ -366,7 +411,7 @@ const applyMode = (newMode) => {
 	// Update instruction text to match the active mode
 	if (isGroup) {
 		description.textContent =
-			"Group selection mode: touches are assigned to groups in turn (round-robin). " +
+			`Group mode: put fingers on the screen and after ${CHOOSE_DELAY_MS / 1000} seconds they will be assigned to groups. ` +
 			"Configure the number of groups using the controls above.";
 		updateGroupLegend();
 	} else {
