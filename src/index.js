@@ -211,9 +211,6 @@ groupLegend.addEventListener("click", (e) => {
 	}
 });
 
-/** Returns a random group index in [0, groupCount). */
-const pickRandomGroup = () => Math.floor(Math.random() * groupCount);
-
 // ----- Single-mode colour helper -----
 const pickUnusedColor = () => {
 	const alreadyChosenColors = Array.from(players.values()).map(
@@ -293,25 +290,50 @@ const choosePlayer = (function () {
  * Schedules group assignment for all pending players.
  * Works like choosePlayer() in single mode: every call cancels the previous
  * timer and starts a new one.  After CHOOSE_DELAY_MS, all players whose
- * groupIndex is still undefined are each assigned a random group and given
- * the corresponding group colour.
+ * groupIndex is still undefined are assigned to groups such that group sizes
+ * differ by at most 1 (balanced random assignment).
  */
 const assignGroups = (function () {
 	const doAssign = () => {
-		let anyAssigned = false;
-		for (const player of players.values()) {
-			if (player.groupIndex === undefined) {
-				const g = pickRandomGroup();
-				player.groupIndex = g;
-				player.color = g;
-				anyAssigned = true;
-			}
+		const pending = Array.from(players.values()).filter(
+			(p) => p.groupIndex === undefined
+		);
+		if (pending.length === 0) return;
+
+		// Count how many players are already assigned to each group.
+		const groupCounts = new Array(groupCount).fill(0);
+		for (const p of players.values()) {
+			if (p.groupIndex !== undefined) groupCounts[p.groupIndex]++;
 		}
-		if (anyAssigned) {
-			draw();
-			updateGroupLegend();
-			ariaLiveLog("Groups assigned");
+
+		// Build a balanced pool of group slots: greedily assign each slot to the
+		// group with the current fewest players so all groups differ by at most 1.
+		const slots = [];
+		for (let i = 0; i < pending.length; i++) {
+			const minCount = Math.min(...groupCounts);
+			const candidates = groupCounts.reduce((acc, c, idx) => {
+				if (c === minCount) acc.push(idx);
+				return acc;
+			}, []);
+			const g = candidates[Math.floor(Math.random() * candidates.length)];
+			slots.push(g);
+			groupCounts[g]++;
 		}
+
+		// Shuffle the slots so the assignment order is unpredictable.
+		for (let i = slots.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[slots[i], slots[j]] = [slots[j], slots[i]];
+		}
+
+		for (let i = 0; i < pending.length; i++) {
+			pending[i].groupIndex = slots[i];
+			pending[i].color = slots[i];
+		}
+
+		draw();
+		updateGroupLegend();
+		ariaLiveLog("Groups assigned");
 	};
 
 	const hasPending = () =>
