@@ -5,7 +5,8 @@
 	"description": "Choose a player",
 	"lang": "en",
 	"display": "standalone",
-	"start_url": "/chooser",
+	"start_url": "https://ajirasek-prsch.github.io/chooser",
+	"scope": "https://ajirasek-prsch.github.io/chooser",
 	"background_color": "#000",
 	"theme_color": "#000",
 	"icons": [

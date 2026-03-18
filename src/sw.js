@@ -1,4 +1,4 @@
-const CACHE_NAME = "v10";
+const CACHE_NAME = "v11";
 
 // Compute the base URL from the service worker's own location so the
 // cached paths work both at the site root (localhost) and under a
